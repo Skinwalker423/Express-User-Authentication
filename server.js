@@ -21,7 +21,7 @@ const main = async() => {
 
 main().catch(err => console.log(err));
 
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -59,16 +59,35 @@ app.post('/search', upload.single('file'), async(req, res) => {
 })
 
 
-app.get('/file/:id', async(req, res) => {
+const handleDownload = async(req, res) => {
     const {id} = req.params;
-    
     const file = await File.findById(id);
+
+    if(file.password != null){
+        if(req.body.password == null){
+            console.log('redirected to password form', req.body.password);
+            res.render('password', {file, id});
+            return;
+        }
+    }
+
+
+
+    if(!await bcrypt.compare(req.body.password, file.password)){
+        res.render('password', {error: true});
+    }
+
     file.downloadCount += 1;
     await file.save();
     console.log(file);
 
+    console.log('made it passed bcrypt');
     res.download(file.path, file.originalName);
-})
+}
+
+app.get('/file/:id', handleDownload);
+app.post('/file/:id', handleDownload);
+
 
 app.listen(port, () => {
     console.log('listening to port 8080');
