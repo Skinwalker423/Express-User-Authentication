@@ -7,7 +7,7 @@ const upload = multer({ dest: 'uploads/' })
 const User = require('./seeds/usersSeeds');
 const File = require('./models/File');
 require('dotenv').config();
-
+const bcrypt = require('bcrypt')
 
 const app = express();
 
@@ -37,20 +37,37 @@ app.get('/search', (req, res) => {
 
 app.post('/search', upload.single('file'), async(req, res) => {
     const {password} = req.body;
-    const {downloadCount, path, originalname } = req.file;
-    console.log(downloadCount);
-    console.log(path);
-    console.log(originalname);
-    res.redirect('/');
+    const { path, originalname } = req.file;
 
-    // try{
-    //     const file = new File({password, path, originalname,  downloadCount: downloadCount + 1});
-    //     await file.save();
-    //     res.redirect('/');
-    // }catch(e){
-    //     console.log(e);
-    //     res.send(e.message)
-    // }
+    const fileData = {
+        path,
+        originalName: originalname,
+    }
+
+    if(password != null && password !== ''){
+        fileData.password = await bcrypt.hash(password, 10)
+    }
+
+    try{
+        const file = await File.create(fileData);
+        console.log(file);
+        res.render('home', {fileLink: `${req.headers.origin}/file/${file.id}`, file })
+    }catch(e){
+        console.log(e);
+        res.send(e.message)
+    }
+})
+
+
+app.get('/file/:id', async(req, res) => {
+    const {id} = req.params;
+    
+    const file = await File.findById(id);
+    file.downloadCount += 1;
+    await file.save();
+    console.log(file);
+
+    res.download(file.path, file.originalName);
 })
 
 app.listen(port, () => {
