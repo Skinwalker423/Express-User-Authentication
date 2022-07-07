@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
+const File = require('../models/File');
 
 const userSchema = new mongoose.Schema({
         name: String,
         password: String,
         email: String,
-        file: String,
+        file: {type: mongoose.Schema.Types.ObjectId, ref: 'File'}
     });
 
 const User = mongoose.model('User', userSchema);

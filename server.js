@@ -2,15 +2,21 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const bodyParser = require('body-parser');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' })
 const User = require('./seeds/usersSeeds');
+const File = require('./models/File');
+require('dotenv').config();
+
+
 const app = express();
 
-const port = 8080;
+const port = process.env.PORT;
 
 
 
 const main = async() => {
-    await mongoose.connect('mongodb://localhost:27017/usersDb');
+    mongoose.connect(process.env.DATABASE_URL);
 }
 
 main().catch(err => console.log(err));
@@ -29,12 +35,22 @@ app.get('/search', (req, res) => {
     res.render('search-bar');
 })
 
-app.post('/search', async(req, res) => {
-    const formData = req.body;
-    console.log(formData);
-    const user = new User(formData);
-    await user.save();
+app.post('/search', upload.single('file'), async(req, res) => {
+    const {password} = req.body;
+    const {downloadCount, path, originalname } = req.file;
+    console.log(downloadCount);
+    console.log(path);
+    console.log(originalname);
     res.redirect('/');
+
+    // try{
+    //     const file = new File({password, path, originalname,  downloadCount: downloadCount + 1});
+    //     await file.save();
+    //     res.redirect('/');
+    // }catch(e){
+    //     console.log(e);
+    //     res.send(e.message)
+    // }
 })
 
 app.listen(port, () => {
